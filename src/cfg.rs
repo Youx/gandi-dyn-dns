@@ -22,7 +22,24 @@ pub struct Cfg {
 
 impl Cfg {
     pub fn load(filename: String) -> Self {
-        let s = std::fs::read_to_string(filename).unwrap();
-        toml::from_str(&s).unwrap()
+        log::info!(target: "cfg", "reading cfg file {}", filename);
+        match std::fs::read_to_string(&filename) {
+            Err(e) => {
+                log::error!(target: "cfg", "failed to read file {}: {}", filename, e);
+                panic!();
+            }
+            Ok(s) => {
+                match toml::from_str::<Cfg>(&s) {
+                    Err(e) => {
+                        log::error!(target: "cfg", "failed to parse config: {}", e);
+                        panic!();
+                    }
+                    Ok(cfg) => {
+                        log::debug!(target: "cfg", "loaded config: {:#?}", cfg);
+                        cfg
+                    }
+                }
+            }
+        }
     }
 }

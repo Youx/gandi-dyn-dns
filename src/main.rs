@@ -3,6 +3,7 @@ mod ipify;
 mod cfg;
 
 use clap::{Arg, App};
+extern crate pretty_env_logger;
 
 async fn refresh_ips(
     cfg: &cfg::Cfg,
@@ -65,18 +66,28 @@ pub async fn main() {
                  .long("config")
                  .takes_value(true)
                  .help("A configuration file"))
+        .after_help(
+"LOGGING:
+    Launch with environment variable RUST_LOG=<level> or RUST_LOG=<logger>=<level>
+    Available levels: error, warning, info, debug (default: error)
+    Available loggers: cfg, ipify, livedns
+"
+        )
         .get_matches();
+
+    pretty_env_logger::init();
 
     let default_conf = get_default_config_file();
     let conf_file = matches.value_of("config")
         .unwrap_or(default_conf.to_str().unwrap());
-    println!("reading cfg file {}", conf_file);
     let cfg = cfg::Cfg::load(String::from(conf_file));
     
     let livedns = livedns::Client::new(String::clone(&cfg.api_key));
     let ipify = ipify::Client::new();
     
-    println!("ips will be refreshed every {} minutes", cfg.refresh_interval);
+    log::info!("IPs will be refreshed every {} minutes",
+               cfg.refresh_interval);
+
     let mut interval = tokio::time::interval(
         std::time::Duration::from_secs(
             cfg.refresh_interval as u64 * 60
@@ -87,7 +98,7 @@ pub async fn main() {
         interval.tick().await;
         match refresh_ips(&cfg, &livedns, &ipify).await {
             Err(e) => {
-                println!("error refreshing dns records: {}", e);
+                log::error!("error refreshing dns records: {}", e);
             }
             Ok(_) => {}
         }

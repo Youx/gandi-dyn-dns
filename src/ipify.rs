@@ -35,6 +35,7 @@ impl Client {
         let res: IpifyResult = self.client.get("https://api.ipify.org/?format=json")
             .send().await?
             .json().await?;
+        log::debug!(target: "ipify", "fetched IPv4: {}", res.ip);
         Ok(res.ip)
     }
 
@@ -42,6 +43,7 @@ impl Client {
         let res: IpifyResult = self.client.get("https://api6.ipify.org/?format=json")
             .send().await?
             .json().await?;
+        log::debug!(target: "ipify", "fetched IPv6: {}", res.ip);
         Ok(res.ip)
     }
 

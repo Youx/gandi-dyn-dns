@@ -47,10 +47,16 @@ impl Client {
 
         match data.status() {
             reqwest::StatusCode::CREATED => {
-                println!("updated DNS entry {:?} {}.{} to {}", kind, name, domain, value);
+                log::info!(target: "livedns",
+                           "updated DNS entry {:?} {}.{} to {}",
+                           kind, name, domain, value);
                 Ok(())
             },
-            e => panic!("unhandled error {}: {}", e.as_u16(), data.text().await?),
+            e => {
+                log::error!(target: "livedns",
+                            "unhandled error {}: {}", e.as_u16(), data.text().await?);
+                panic!();
+            },
         }
     }
 
@@ -63,15 +69,20 @@ impl Client {
 
         match data.status() {
             reqwest::StatusCode::OK => {
-                println!("unchanged DNS entry {:?} {}.{} ({})", kind, name, domain, value);
+                log::info!(target: "livedns", "unchanged DNS entry {:?} {}.{} ({})",
+                           kind, name, domain, value);
                 Ok(())
             },
             reqwest::StatusCode::CREATED => {
-                println!("created DNS entry {:?} {}.{} to {}", kind, name, domain, value);
+                log::info!(target: "livedns", "created DNS entry {:?} {}.{} to {}", kind, name, domain, value);
                 Ok(())
             },
             reqwest::StatusCode::CONFLICT => self.update_dns_entry(domain, name, kind, value).await,
-            e => panic!("unhandled error {}: {}", e.as_u16(), data.text().await?),
+            e => {
+                log::error!(target: "livedns", "unhandled error {}: {}",
+                            e.as_u16(), data.text().await?);
+                panic!();
+            }
         }
     }
 
